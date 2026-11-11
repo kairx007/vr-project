@@ -148,13 +148,25 @@ const latencyContext=latencyCanvas.getContext('2d');
 const latencyTexture=new THREE.CanvasTexture(latencyCanvas);latencyTexture.colorSpace=THREE.SRGBColorSpace;
 const latencyMesh=new THREE.Mesh(new THREE.PlaneGeometry(.5,.125),new THREE.MeshBasicMaterial({map:latencyTexture,transparent:true,depthTest:false,toneMapped:false}));
 latencyMesh.position.set(-.27,.29,-.8);latencyMesh.renderOrder=1000;latencyMesh.visible=false;camera.add(latencyMesh);
+const ammoCanvas=document.createElement('canvas');ammoCanvas.width=384;ammoCanvas.height=112;
+const ammoContext=ammoCanvas.getContext('2d');
+const ammoTexture=new THREE.CanvasTexture(ammoCanvas);ammoTexture.colorSpace=THREE.SRGBColorSpace;
+const ammoMesh=new THREE.Mesh(new THREE.PlaneGeometry(.34,.1),new THREE.MeshBasicMaterial({map:ammoTexture,transparent:true,depthTest:false,toneMapped:false}));
+ammoMesh.position.set(0,-.24,-.78);ammoMesh.renderOrder=1001;ammoMesh.visible=false;camera.add(ammoMesh);
 let latestShotPing=0;
 const moveKeys=new Set();
 const moveSpeed=4.2;
 const moveBounds={minX:-14,maxX:14,minZ:-47,maxZ:7};
 const moveForward=new THREE.Vector3(),moveRight=new THREE.Vector3(),moveDelta=new THREE.Vector3(),moveUp=new THREE.Vector3(0,1,0),bodyQuaternion=new THREE.Quaternion();
 let mouseLooking=false,lastPointerX=0,lastPointerY=0;
-function updateHUD(){scoreEl.textContent=String(score).padStart(4,'0');ammoEl.textContent=String(ammo).padStart(2,'0')}
+function updateHUD(){
+ scoreEl.textContent=String(score).padStart(4,'0');ammoEl.textContent=String(ammo).padStart(2,'0');
+ ammoContext.clearRect(0,0,384,112);ammoContext.fillStyle='rgba(9,16,19,.32)';ammoContext.fillRect(0,0,384,112);
+ ammoContext.fillStyle='#aab3ac';ammoContext.font='500 22px monospace';ammoContext.fillText('AMMO',22,38);
+ ammoContext.fillStyle='#c4f36b';ammoContext.font='bold 54px monospace';ammoContext.fillText(`${String(ammo).padStart(2,'0')} / 12`,22,92);
+ ammoTexture.needsUpdate=true;
+}
+updateHUD();
 let toastTimer;function flash(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),500)}
 function spawnShotEffects(muzzle,direction,travelDistance,impactPoint,onImpact){
  const flashMesh=new THREE.Mesh(flashGeometry,flashMaterial);
@@ -420,10 +432,10 @@ document.querySelector('#start-button').addEventListener('click',async()=>{
 renderer.xr.addEventListener('sessionstart',()=>{
  // The separate VRButton can enter XR without pressing the range start card first.
  if(!playing){newRound();overlay.classList.add('hidden')}
- desktopGun.visible=false;controllerGuns.forEach(g=>g.visible=true);latencyMesh.visible=true;renderer.shadowMap.enabled=false;
+ desktopGun.visible=false;controllerGuns.forEach(g=>g.visible=true);latencyMesh.visible=true;ammoMesh.visible=true;renderer.shadowMap.enabled=false;
  hint.textContent='Left stick: move · right stick: turn · trigger: fire';
 });
-renderer.xr.addEventListener('sessionend',()=>{controllerGuns.forEach(g=>g.visible=false);desktopGun.visible=true;latencyMesh.visible=false;renderer.shadowMap.enabled=true;playerRig.position.y=0;hint.textContent='WASD / arrows: move · drag: look · click: fire'});
+renderer.xr.addEventListener('sessionend',()=>{controllerGuns.forEach(g=>g.visible=false);desktopGun.visible=true;latencyMesh.visible=false;ammoMesh.visible=false;renderer.shadowMap.enabled=true;playerRig.position.y=0;hint.textContent='WASD / arrows: move · drag: look · click: fire'});
 function animate(){
  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  applyMovement(dt);updateEffects(dt);
