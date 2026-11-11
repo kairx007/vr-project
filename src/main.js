@@ -141,7 +141,7 @@ const moveForward=new THREE.Vector3(),moveRight=new THREE.Vector3(),moveDelta=ne
 let mouseLooking=false,lastPointerX=0,lastPointerY=0;
 function updateHUD(){scoreEl.textContent=String(score).padStart(4,'0');ammoEl.textContent=String(ammo).padStart(2,'0')}
 let toastTimer;function flash(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),500)}
-function spawnShotEffects(muzzle,direction,travelDistance,impactPoint){
+function spawnShotEffects(muzzle,direction,travelDistance,impactPoint,onImpact){
  const flashMesh=new THREE.Mesh(flashGeometry,flashMaterial);
  flashMesh.position.copy(muzzle).addScaledVector(direction,.035);
  flashMesh.quaternion.setFromUnitVectors(effectUp,direction);
@@ -152,7 +152,7 @@ function spawnShotEffects(muzzle,direction,travelDistance,impactPoint){
  tracer.position.copy(muzzle).addScaledVector(direction,.09);scene.add(tracer);
  const trail=new THREE.Mesh(trailGeometry,trailMaterial);
  trail.quaternion.copy(tracer.quaternion);trail.position.copy(muzzle).addScaledVector(direction,.29);scene.add(trail);
- activeEffects.push({kind:'tracer',mesh:tracer,trail,origin:muzzle.clone(),direction:direction.clone(),distance:travelDistance,progress:0,speed:18,impactPoint:impactPoint?.clone()??null});
+ activeEffects.push({kind:'tracer',mesh:tracer,trail,origin:muzzle.clone(),direction:direction.clone(),distance:travelDistance,progress:0,speed:42,impactPoint:impactPoint?.clone()??null,onImpact});
 }
 function spawnImpactSparks(point,direction){
  for(let i=0;i<18;i++){
@@ -173,7 +173,7 @@ function updateEffects(dt){
    const remaining=Math.max(0,(effect.distance-effect.progress)/Math.max(effect.distance,.01));
    effect.trail.scale.z=Math.max(.03,Math.min(1,remaining));
    if(effect.progress>=effect.distance){
-    if(effect.impactPoint)spawnImpactSparks(effect.impactPoint,effect.direction);
+    if(effect.impactPoint){spawnImpactSparks(effect.impactPoint,effect.direction);effect.onImpact?.()}
     scene.remove(effect.mesh,effect.trail);activeEffects.splice(i,1);
    }
   }else if(effect.kind==='spark'){
@@ -226,12 +226,14 @@ function fire(origin,direction,muzzleOrigin=origin){
  const target=firstHit?.object.userData.target??null;
  const nearest=firstHit?.distance??55;
  const hitPoint=firstHit?.point??null;
- if(target?.alive){
-  target.alive=false;target.state='falling';target.fallAngle=0;target.downTime=0;
-  const points=target.moving?150:100;score+=points;updateHUD();flash(`+${points}  //  CLEAN HIT`);
- }else flash('MISS');
+ if(!target)flash('MISS');
  const tracerDistance=target?Math.max(.2,nearest-muzzleOrigin.distanceTo(origin)):18;
- spawnShotEffects(muzzleOrigin,shotDirection,tracerDistance,target?hitPoint:null);
+ const impactTarget=target;
+ spawnShotEffects(muzzleOrigin,shotDirection,tracerDistance,target?hitPoint:null,()=>{
+  if(!impactTarget?.alive)return;
+  impactTarget.alive=false;impactTarget.state='falling';impactTarget.fallAngle=0;impactTarget.downTime=0;
+  const points=impactTarget.moving?150:100;score+=points;updateHUD();flash(`+${points}  //  CLEAN HIT`);
+ });
  void measureShotRtt(shotId,Boolean(target));
  if(ammo===0){reloadUntil=performance.now()+1200;setTimeout(()=>{if(playing&&ammo===0){ammo=12;updateHUD();flash('MAGAZINE READY')}},1200)}
 }
