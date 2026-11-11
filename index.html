@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0b1014" />
+    <title>Outpost — VR Target Range</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="hud" aria-live="polite">
+        <div class="brand"><span class="brand-mark">O</span><span>OUTPOST <small>TRAINING SIM</small></span></div>
+        <div class="score-panel"><span class="eyebrow">SESSION SCORE</span><strong id="score">0000</strong></div>
+        <div class="ammo-panel"><span class="eyebrow">ROUNDS</span><strong><span id="ammo">12</span><i>/ 12</i></strong></div>
+        <div class="latency-panel" aria-live="polite"><span class="eyebrow">SHOT RTT</span><strong><span id="latency-value">—</span><i>ms</i></strong><small id="latency-note">APP RTT · GAME SERVER ACK</small></div>
+        <div class="hint" id="hint">Point and press trigger to fire</div>
+      </div>
+      <div id="overlay">
+        <div class="intro-card">
+          <span class="eyebrow accent">LIVE FIRE · SIMULATION 01</span>
+          <h1>Range<br><em>ready.</em></h1>
+          <p>Take your place on the range. Track the moving plates and make every round count.</p>
+          <button id="start-button"><span>ENTER THE RANGE</span><b>↗</b></button>
+          <div class="controls"><span>⌖ &nbsp;Aim with either controller</span><span>◉ &nbsp;Squeeze trigger to fire</span><span>↗ &nbsp;Left stick: move · right stick: turn</span><span>⌄ &nbsp;Push right stick down or click it to crouch</span><span>⌁ &nbsp;Desktop: drag to look, click to fire</span></div>
+        </div>
+      </div>
+      <div id="toast" aria-live="assertive"></div>
+      <div id="crosshair"><span></span></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
