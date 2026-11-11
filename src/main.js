@@ -147,12 +147,22 @@ const latencyCanvas=document.createElement('canvas');latencyCanvas.width=512;lat
 const latencyContext=latencyCanvas.getContext('2d');
 const latencyTexture=new THREE.CanvasTexture(latencyCanvas);latencyTexture.colorSpace=THREE.SRGBColorSpace;
 const latencyMesh=new THREE.Mesh(new THREE.PlaneGeometry(.5,.125),new THREE.MeshBasicMaterial({map:latencyTexture,transparent:true,depthTest:false,toneMapped:false}));
-latencyMesh.position.set(-.27,.29,-.8);latencyMesh.renderOrder=1000;latencyMesh.visible=false;camera.add(latencyMesh);
+latencyMesh.position.set(0,.19,-.8);latencyMesh.renderOrder=1000;latencyMesh.visible=false;camera.add(latencyMesh);
 const ammoCanvas=document.createElement('canvas');ammoCanvas.width=384;ammoCanvas.height=112;
 const ammoContext=ammoCanvas.getContext('2d');
 const ammoTexture=new THREE.CanvasTexture(ammoCanvas);ammoTexture.colorSpace=THREE.SRGBColorSpace;
 const ammoMesh=new THREE.Mesh(new THREE.PlaneGeometry(.34,.1),new THREE.MeshBasicMaterial({map:ammoTexture,transparent:true,depthTest:false,toneMapped:false}));
-ammoMesh.position.set(0,-.24,-.78);ammoMesh.renderOrder=1001;ammoMesh.visible=false;camera.add(ammoMesh);
+ammoMesh.position.set(.07,-.29,-.78);ammoMesh.renderOrder=1001;ammoMesh.visible=false;camera.add(ammoMesh);
+const vrScoreCanvas=document.createElement('canvas');vrScoreCanvas.width=320;vrScoreCanvas.height=112;
+const vrScoreContext=vrScoreCanvas.getContext('2d');
+const vrScoreTexture=new THREE.CanvasTexture(vrScoreCanvas);vrScoreTexture.colorSpace=THREE.SRGBColorSpace;
+const vrScoreMesh=new THREE.Mesh(new THREE.PlaneGeometry(.28,.1),new THREE.MeshBasicMaterial({map:vrScoreTexture,transparent:true,depthTest:false,toneMapped:false}));
+vrScoreMesh.position.set(-.27,-.29,-.78);vrScoreMesh.renderOrder=1001;vrScoreMesh.visible=false;camera.add(vrScoreMesh);
+const vrFeedbackCanvas=document.createElement('canvas');vrFeedbackCanvas.width=512;vrFeedbackCanvas.height=112;
+const vrFeedbackContext=vrFeedbackCanvas.getContext('2d');
+const vrFeedbackTexture=new THREE.CanvasTexture(vrFeedbackCanvas);vrFeedbackTexture.colorSpace=THREE.SRGBColorSpace;
+const vrFeedbackMesh=new THREE.Mesh(new THREE.PlaneGeometry(.34,.074),new THREE.MeshBasicMaterial({map:vrFeedbackTexture,transparent:true,depthTest:false,toneMapped:false}));
+vrFeedbackMesh.position.set(.12,-.105,-.78);vrFeedbackMesh.renderOrder=1002;vrFeedbackMesh.visible=false;camera.add(vrFeedbackMesh);
 let latestShotPing=0;
 const moveKeys=new Set();
 const moveSpeed=4.2;
@@ -165,9 +175,18 @@ function updateHUD(){
  ammoContext.fillStyle='#aab3ac';ammoContext.font='500 22px monospace';ammoContext.fillText('AMMO',22,38);
  ammoContext.fillStyle='#c4f36b';ammoContext.font='bold 54px monospace';ammoContext.fillText(`${String(ammo).padStart(2,'0')} / 12`,22,92);
  ammoTexture.needsUpdate=true;
+ vrScoreContext.clearRect(0,0,320,112);vrScoreContext.fillStyle='rgba(9,16,19,.32)';vrScoreContext.fillRect(0,0,320,112);
+ vrScoreContext.fillStyle='#aab3ac';vrScoreContext.font='500 22px monospace';vrScoreContext.fillText('SCORE / XP',16,38);
+ vrScoreContext.fillStyle='#c4f36b';vrScoreContext.font='bold 52px monospace';vrScoreContext.fillText(String(score).padStart(4,'0'),16,92);
+ vrScoreTexture.needsUpdate=true;
 }
 updateHUD();
-let toastTimer;function flash(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),500)}
+let toastTimer;function flash(text){
+ toast.textContent=text;toast.classList.add('show');
+ vrFeedbackContext.clearRect(0,0,512,112);
+ vrFeedbackContext.fillStyle=text.includes('MISS')?'#ff775d':'#c4f36b';vrFeedbackContext.font='bold 34px monospace';vrFeedbackContext.textAlign='center';vrFeedbackContext.textBaseline='middle';vrFeedbackContext.fillText(text,256,56);
+ vrFeedbackTexture.needsUpdate=true;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');vrFeedbackContext.clearRect(0,0,512,112);vrFeedbackTexture.needsUpdate=true},700)
+}
 function spawnShotEffects(muzzle,direction,travelDistance,impactPoint,onImpact){
  const flashMesh=new THREE.Mesh(flashGeometry,flashMaterial);
  flashMesh.position.copy(muzzle).addScaledVector(direction,.035);
@@ -215,8 +234,7 @@ function updateEffects(dt){
 }
 function drawLatencyPanel(value,note){
  latencyContext.clearRect(0,0,512,128);
- latencyContext.fillStyle='rgba(9,16,19,.92)';latencyContext.fillRect(0,0,512,128);
- latencyContext.strokeStyle='#c4f36b';latencyContext.lineWidth=3;latencyContext.strokeRect(2,2,508,124);
+ latencyContext.fillStyle='rgba(9,16,19,.72)';latencyContext.fillRect(0,0,512,128);
  latencyContext.fillStyle='#a5b0ad';latencyContext.font='500 19px monospace';latencyContext.fillText('SHOT ROUND TRIP',18,31);
  latencyContext.fillStyle='#c4f36b';latencyContext.font='bold 48px monospace';latencyContext.fillText(`${value} ms`,18,91);
  latencyContext.fillStyle='#a5b0ad';latencyContext.font='16px monospace';latencyContext.fillText(note,270,91);
@@ -432,10 +450,10 @@ document.querySelector('#start-button').addEventListener('click',async()=>{
 renderer.xr.addEventListener('sessionstart',()=>{
  // The separate VRButton can enter XR without pressing the range start card first.
  if(!playing){newRound();overlay.classList.add('hidden')}
- desktopGun.visible=false;controllerGuns.forEach(g=>g.visible=true);latencyMesh.visible=true;ammoMesh.visible=true;renderer.shadowMap.enabled=false;
+ desktopGun.visible=false;controllerGuns.forEach(g=>g.visible=true);latencyMesh.visible=true;ammoMesh.visible=true;vrScoreMesh.visible=true;vrFeedbackMesh.visible=true;renderer.shadowMap.enabled=false;
  hint.textContent='Left stick: move · right stick: turn · trigger: fire';
 });
-renderer.xr.addEventListener('sessionend',()=>{controllerGuns.forEach(g=>g.visible=false);desktopGun.visible=true;latencyMesh.visible=false;ammoMesh.visible=false;renderer.shadowMap.enabled=true;playerRig.position.y=0;hint.textContent='WASD / arrows: move · drag: look · click: fire'});
+renderer.xr.addEventListener('sessionend',()=>{controllerGuns.forEach(g=>g.visible=false);desktopGun.visible=true;latencyMesh.visible=false;ammoMesh.visible=false;vrScoreMesh.visible=false;vrFeedbackMesh.visible=false;renderer.shadowMap.enabled=true;playerRig.position.y=0;hint.textContent='WASD / arrows: move · drag: look · click: fire'});
 function animate(){
  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  applyMovement(dt);updateEffects(dt);
