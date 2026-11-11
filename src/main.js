@@ -253,7 +253,7 @@ function fire(origin,direction,muzzleOrigin=origin){
  if(ammo===0){reloadUntil=performance.now()+1200;setTimeout(()=>{if(playing&&ammo===0){ammo=12;updateHUD();flash('MAGAZINE READY')}},1200)}
 }
 function getAim(controller){const p=new THREE.Vector3(),q=new THREE.Quaternion();controller.getWorldPosition(p);controller.getWorldQuaternion(q);const dir=new THREE.Vector3(0,0,-1).applyQuaternion(q).normalize();return {p,dir}}
-function getGunMuzzle(gun,origin,direction){if(!gun)return origin.clone().addScaledVector(direction,.35);gun.updateWorldMatrix(true,false);return gun.localToWorld(new THREE.Vector3(0,.044,-.516))}
+function getGunMuzzle(gun,origin,direction){if(!gun)return origin.clone().addScaledVector(direction,.35);gun.updateWorldMatrix(true,false);return gun.localToWorld(new THREE.Vector3(0,.199,-.516))}
 function fireFromController(controller){
  const {p,dir}=getAim(controller),gun=controllerGuns[controllers.indexOf(controller)];
  fire(p,dir,getGunMuzzle(gun,p,dir));
@@ -274,11 +274,6 @@ function createHandgun(handedness=1){
  const gripMat=new THREE.MeshStandardMaterial({color:0x2a2927,metalness:.12,roughness:.78});
  const edgeMat=new THREE.MeshStandardMaterial({color:0xa97c20,metalness:.94,roughness:.2,envMapIntensity:1.3});
  const accentMat=new THREE.MeshStandardMaterial({color:0x6b4a10,metalness:.88,roughness:.22});
- const gloveMat=new THREE.MeshStandardMaterial({color:0x111313,roughness:.57,metalness:.04});
- const gloveLight=new THREE.MeshStandardMaterial({color:0x242726,roughness:.5,metalness:.06});
- const seamMat=new THREE.MeshStandardMaterial({color:0x353a38,roughness:.8,metalness:0});
- const skinMat=new THREE.MeshStandardMaterial({color:0xb77a58,roughness:.78,metalness:0});
- const skinLight=new THREE.MeshStandardMaterial({color:0xc58a67,roughness:.73,metalness:0});
  const addBox=(size,pos,material,rot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(...size),material);m.position.set(...pos);if(rot)m.rotation.set(...rot);gun.add(m);return m};
  const profile=(points,depth,material,offsetX=0,bevel=.003)=>{
   const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);
@@ -313,7 +308,6 @@ function createHandgun(handedness=1){
  profile([[.27,.049],[.35,.049],[.34,.022],[.275,.022]],.004,blackMat,-.05,.001);
  // Slide serrations, sights and fasteners on both sides.
  for(let side of [-1,1]){
-  for(let i=0;i<9;i++)addBox([.003,.07,.008],[side*.052,.045,-.065-i*.014],blackMat);
   addBox([.014,.025,.025],[side*.057,.082,-.026],blackMat);
   addBox([.014,.025,.025],[side*.057,.082,-.39],blackMat);
   const dot=new THREE.Mesh(new THREE.SphereGeometry(.005,8,6),accentMat);dot.position.set(side*.064,.087,-.39);gun.add(dot);
@@ -328,40 +322,13 @@ function createHandgun(handedness=1){
   const z=-.075-i*.031;
   for(const side of [-1,1])addBox([.003,.004,.06],[side*.054,-.118,z],edgeMat,[0,0,-.2]);
  }
- // Human-shaped hand wrapped around the grip. The thumb mirrors for left/right hands.
- const hand=new THREE.Group();gun.add(hand);
- const capsule=(radius,length,material)=>new THREE.Mesh(new THREE.CapsuleGeometry(radius,length,4,8),material);
- const sphere=(scale,pos,material)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),material);m.scale.set(...scale);m.position.set(...pos);hand.add(m);return m};
- const palm=sphere([.047,.082,.031],[0,-.157,.024],gloveMat);palm.rotation.z=-.12;
- const palmBack=sphere([.041,.069,.012],[0,-.151,.048],gloveLight);palmBack.rotation.z=-.12;
- const wrist=capsule(.027,.07,gloveMat);wrist.scale.set(.82,1,.7);wrist.position.set(0,-.071,.084);hand.add(wrist);
- const thumbSide=handedness<0?-1:1;
- sphere([.024,.043,.022],[thumbSide*.027,-.121,-.001],gloveLight).rotation.z=-thumbSide*.28;
- sphere([.017,.039,.018],[-thumbSide*.029,-.16,.015],gloveMat);
- for(const x of [-.012,.012]){const tendon=capsule(.0024,.058,gloveLight);tendon.scale.z=.58;tendon.position.set(x,-.061,.057);tendon.rotation.z=x<0?-.08:.08;hand.add(tendon)}
- const up=new THREE.Vector3(0,1,0);
- function fingerBone(start,end,radius,material){
-  const a=new THREE.Vector3(...start),b=new THREE.Vector3(...end),delta=b.clone().sub(a);
-  const bone=capsule(radius,Math.max(.012,delta.length()-radius*1.4),material);
-  bone.position.copy(a).add(b).multiplyScalar(.5);bone.quaternion.setFromUnitVectors(up,delta.normalize());hand.add(bone);
- }
- const fingerXs=[-.027,-.009,.009,.027],fingerYs=[-.112,-.145,-.178,-.211];
- for(let i=0;i<4;i++){
-  const x=fingerXs[i],y=fingerYs[i];
-  sphere([.011,.012,.009],[x,y,.032],gloveLight);
-  fingerBone([x,y,.044],[x*1.08,y-.004,-.025],.009,gloveMat);
-  fingerBone([x*1.08,y-.004,-.025],[x*.94,y-.009,-.093],.0085,gloveMat);
-  sphere([.0085,.009,.007],[x*1.08,y-.004,-.025],gloveLight);
-  sphere([.008,.008,.007],[x*.94,y-.009,-.088],gloveLight);
- }
- // Gloved palm stitching and padded knuckle seams.
- for(const x of [-.025,-.008,.009,.026]){const seam=capsule(.0015,.027,seamMat);seam.position.set(x,-.102,.054);seam.rotation.z=-.12;hand.add(seam)}
- fingerBone([thumbSide*.037,-.093,.035],[thumbSide*.052,-.105,-.025],.012,gloveLight);
- fingerBone([thumbSide*.052,-.105,-.025],[thumbSide*.052,-.09,-.104],.011,skinMat);
- sphere([.012,.012,.011],[thumbSide*.052,-.105,-.025],gloveLight);
- sphere([.011,.011,.01],[thumbSide*.052,-.09,-.09],skinLight);
- const thumbTip=capsule(.011,.024,skinMat);thumbTip.position.set(thumbSide*.05,-.086,-.119);thumbTip.rotation.x=Math.PI/2;hand.add(thumbTip);
- sphere([.006,.002,.009],[thumbSide*.05,-.083,-.132],skinLight);
+ // Oversized angular magazine shoe, rear spur hammer and upper safety lever.
+ addBox([.10,.025,.116],[0,-.28,-.09],bodyMat);
+ addBox([.052,.035,.024],[0,.045,.018],edgeMat,[.22,0,-.18]);
+ const safety=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.012,8),accentMat);safety.rotation.z=Math.PI/2;safety.position.set(.052,.06,-.045);gun.add(safety);
+ // Put the local origin at the center of the grip, then scale to the requested envelope.
+ for(const part of gun.children)part.position.y+=.155;
+ gun.scale.set(.38,.4,.48);
  gun.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
  return gun;
 }
@@ -377,7 +344,7 @@ controllers.forEach(controller=>{
 const desktopGun=createHandgun(1);
 desktopGun.position.set(.27,-.25,-.62);
 desktopGun.rotation.set(-.04,-.07,0);
-desktopGun.scale.setScalar(1.15);
+desktopGun.scale.multiplyScalar(1.15);
 camera.add(desktopGun);
 // Move the player rig (the XR camera parent), keeping headset height and view intact.
 playerRig.add(camera);
